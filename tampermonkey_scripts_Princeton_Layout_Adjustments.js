@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Princeton Layout Adjustments + DARKMODE & MENU TOGGLES
 // @namespace    http://tampermonkey.net/
-// @version      0.36
+// @version      0.38
 // @description  Adjust layout and zoom level based on screen width for Princeton University website
 // @match        https://introcs.cs.princeton.edu/*
 // @grant        GM_addStyle
@@ -16,8 +16,8 @@ document.addEventListener('DOMContentLoaded', function () {
     buttonWrapper.style.alignItems = 'center'; // Center the items vertically
 
     // Initialize states from localStorage
-    let isMenuVisible = localStorage.getItem('isMenuVisible') === 'true' || true;
-    let isDarkMode = localStorage.getItem('isDarkMode') === 'true' || false;
+    let isMenuVisible = localStorage.getItem('isMenuVisible') === 'false' ? false : true;
+    let isDarkMode = localStorage.getItem('isDarkMode') === 'true' ? true : false;
     let zoomLevel = parseFloat(localStorage.getItem('zoomLevel')) || 1.75; // Updated default zoom to 175%
 
     // Function to toggle menu visibility
@@ -118,8 +118,8 @@ document.addEventListener('DOMContentLoaded', function () {
     document.body.insertBefore(buttonWrapper, document.body.firstChild);
 
     // Initialize dark mode and menu visibility states
+    blockMenu(!isMenuVisible); // Initial block or unblock based on saved state
     applyDarkMode();
-    blockMenu(!isMenuVisible);
     adjustZoomLevel(zoomLevel);
 
     // Function to save states in localStorage
@@ -182,7 +182,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const screenWidth = window.innerWidth;
             const screenHeight = window.innerHeight;
 
-
             // Determine whether the screen is in portrait or landscape mode
             const isPortrait = screenHeight > screenWidth;
 
@@ -212,11 +211,3 @@ document.addEventListener('DOMContentLoaded', function () {
     adjustLayoutAndZoom();
 });
 
-// Change Log:
-// Version 0.36:
-// - Updated default zoom to 175%
-// - Added new toggle zoom button
-// - Added new toggle menu button
-// - Added new toggle dark mode button
-// - Modified menu link colors for better visibility
-// - Updated dark mode to make it more visible

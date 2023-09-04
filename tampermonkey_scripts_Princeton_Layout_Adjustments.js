@@ -1,24 +1,27 @@
 // ==UserScript==
 // @name         Princeton Layout Adjustments + DARKMODE & MENU TOGGLES
 // @namespace    http://tampermonkey.net/
-// @version      0.38
-// @description  Adjust layout and zoom level based on screen width for Princeton University website
+// @version      0.121
+// @description  Adjust layout and zoom level based on screen width for Princeton University websites
 // @match        https://introcs.cs.princeton.edu/*
+// @match        https://algs4.cs.princeton.edu/*
+// @match        https://aofa.cs.princeton.edu/*
+// @match        https://ac.cs.princeton.edu/*
 // @grant        GM_addStyle
 // @run-at       document-start
 // @author       Alex Spaulding
 // ==/UserScript==
+
+// Declare lastOrientation as a global variable
+let lastOrientation = '';
+let isPortrait = true; // Initialize it to true
+
 
 document.addEventListener('DOMContentLoaded', function () {
     // Create a wrapper div for the buttons
     const buttonWrapper = document.createElement('div');
     buttonWrapper.style.display = 'flex'; // Make the buttons display in a row
     buttonWrapper.style.alignItems = 'center'; // Center the items vertically
-
-    // Initialize states from localStorage
-    let isMenuVisible = localStorage.getItem('isMenuVisible') === 'false' ? false : true;
-    let isDarkMode = localStorage.getItem('isDarkMode') === 'true' ? true : false;
-    let zoomLevel = parseFloat(localStorage.getItem('zoomLevel')) || 1.75; // Updated default zoom to 175%
 
     // Function to toggle menu visibility
     function toggleMenuVisibility() {
@@ -44,7 +47,22 @@ document.addEventListener('DOMContentLoaded', function () {
             const menuItems = document.querySelectorAll('#menu a');
             menuItems.forEach((menuItem) => {
                 menuItem.style.color = 'white'; // Set menu item text color to white
-                menuItem.style.backgroundColor = '#35393b'; // Change menu background color to #35393b
+                menuItem.style.backgroundColor = '#363636'; // Change menu background color to #363636
+            });
+
+            // Change the background color of <pre> elements within tables and blockquotes
+            const tablesAndBlockquotes = document.querySelectorAll('table, blockquote'); // Select all tables and blockquotes on the page
+            tablesAndBlockquotes.forEach((element) => {
+                const preElements = element.querySelectorAll('pre'); // Select <pre> elements within each table or blockquote
+                preElements.forEach((pre) => {
+                    pre.style.backgroundColor = '#363636'; // Change background color to #363636
+                });
+            });
+
+            // Change the background color of <tr> elements within tables
+            const tableRows = document.querySelectorAll('table tr[bgcolor="#ebebeb"]'); // Select all <tr> elements with bgcolor="#ebebeb"
+            tableRows.forEach((row) => {
+                row.style.backgroundColor = '#363636'; // Change background color to #363636
             });
 
             // Change link colors
@@ -55,8 +73,23 @@ document.addEventListener('DOMContentLoaded', function () {
                     link.style.color = 'mediumslateblue'; // Change link color to medium slate blue when clicked
                 });
             });
+
+            // Change button background colors and text colors
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach((button) => {
+                button.style.backgroundColor = '#363636'; // Change button background color to #363636
+                button.style.color = 'white'; // Change button text color to white
+            });
         } else {
             document.body.style.backgroundColor = ''; // Reset to default background color
+
+            // Reset button background colors and text colors
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach((button) => {
+                button.style.backgroundColor = ''; // Reset button background color
+                button.style.color = 'black'; // Reset button text color to black
+            });
+
             document.body.style.color = ''; // Reset text color to default
 
             // Reset menu item colors
@@ -74,30 +107,49 @@ document.addEventListener('DOMContentLoaded', function () {
                     link.style.color = 'orange'; // Change link color to orange when clicked previously
                 });
             });
+
+            // Reset the background color of <tr> elements within tables
+            const tableRows = document.querySelectorAll('table tr[bgcolor="#ebebeb"]');
+            tableRows.forEach((row) => {
+                row.style.backgroundColor = '#ebebeb'; // Reset background color to default
+            });
+
+            // Reset the background color of <pre> elements within tables and blockquotes
+            const tablesAndBlockquotes = document.querySelectorAll('table, blockquote');
+            tablesAndBlockquotes.forEach((element) => {
+                const preElements = element.querySelectorAll('pre');
+                preElements.forEach((pre) => {
+                    pre.style.backgroundColor = '#ebebeb'; // Reset background color to default
+                });
+            });
         }
     }
+
+    // Zoom levels
+    const zoomLevels = [1.0, 1.25, 1.5, 1.75, 2.0];
 
     // Function to adjust the zoom level
     function adjustZoomLevel(zoom) {
         document.body.style.zoom = zoom;
     }
 
-    // Zoom levels
-    const zoomLevels = [1.0, 1.25, 1.5, 1.75, 2.0];
-    let currentZoomLevel = zoomLevels.indexOf(zoomLevel);
-
-    // Function to toggle the zoom level
     function toggleZoom() {
+        // Always increase the zoom level by 25% and wrap around if it exceeds the maximum
         currentZoomLevel = (currentZoomLevel + 1) % zoomLevels.length;
         zoomLevel = zoomLevels[currentZoomLevel];
         adjustZoomLevel(zoomLevel);
-        saveStates();
+        updateZoomButtonText(); // Update the zoom level button text
+        saveStates(); // Save the state after adjusting the zoom level
     }
 
     // Adding a button to toggle zoom level
     const toggleZoomButton = document.createElement('button');
-    toggleZoomButton.textContent = 'Toggle Zoom';
     toggleZoomButton.addEventListener('click', toggleZoom);
+
+    // Function to update the zoom level button text
+    function updateZoomButtonText() {
+        toggleZoomButton.textContent = `Toggle Zoom (${(zoomLevel * 100).toFixed(0)}%)`;
+    }
 
     // Adding a button to toggle menu visibility
     const toggleMenuButton = document.createElement('button');
@@ -109,25 +161,44 @@ document.addEventListener('DOMContentLoaded', function () {
     toggleDarkModeButton.textContent = 'Toggle Dark Mode';
     toggleDarkModeButton.addEventListener('click', toggleDarkMode);
 
-    // Append the buttons to the wrapper div
-    buttonWrapper.appendChild(toggleMenuButton);
-    buttonWrapper.appendChild(toggleDarkModeButton);
-    buttonWrapper.appendChild(toggleZoomButton);
+    // Append the buttons to the wrapper div in the desired order
+    buttonWrapper.style.marginBottom = '10px'; // Adjust the bottom margin to your desired spacing
+    buttonWrapper.appendChild(toggleZoomButton); // Toggle Zoom button comes first
+    buttonWrapper.appendChild(toggleMenuButton); // Toggle Menu button comes second
+    buttonWrapper.appendChild(toggleDarkModeButton); // Toggle Dark Mode button comes last
 
     // Add the wrapper div to the page (you can customize where to add it)
     document.body.insertBefore(buttonWrapper, document.body.firstChild);
+
+    // Initialize states from localStorage
+    let isMenuVisible = localStorage.getItem('isMenuVisible') === 'false' ? false : true;
+    let isDarkMode = localStorage.getItem('isDarkMode') === 'true' ? true : false;
+
+    // Initialize currentZoomLevel based on the value from getCurrentZoom()
+    let currentZoomLevel = zoomLevels.indexOf(getCurrentZoom());
+
+    // Initialize zoom level from localStorage or use the default
+    let zoomLevel = parseFloat(localStorage.getItem('zoomLevel')) || 1.75; // Updated default zoom to 175%
+
+    // Function to get the current zoom level from localStorage
+    function getCurrentZoom() {
+        const savedZoom = localStorage.getItem('zoomLevel');
+        return savedZoom ? parseFloat(savedZoom) : 1.75; // Default zoom to 175%
+    }
 
     // Initialize dark mode and menu visibility states
     blockMenu(!isMenuVisible); // Initial block or unblock based on saved state
     applyDarkMode();
     adjustZoomLevel(zoomLevel);
 
-    // Function to save states in localStorage
+    // Updated function to save states in localStorage
     function saveStates() {
         localStorage.setItem('isMenuVisible', isMenuVisible);
         localStorage.setItem('isDarkMode', isDarkMode);
         localStorage.setItem('zoomLevel', zoomLevel.toString());
+        localStorage.setItem('zoomButtonText', toggleZoomButton.textContent);
     }
+
 
     // Function to block or unblock the menu element
     function blockMenu(shouldBlock) {
@@ -171,43 +242,98 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Observe changes in the document's child nodes
-    observer.observe(document, { childList: true, subtree: true });
+   // Function to adjust layout and zoom level based on screen width and orientation
+function adjustLayoutAndZoom() {
+    const contentElement = document.getElementById('content');
 
-    // Function to adjust layout and zoom level based on screen width
-    function adjustLayoutAndZoom() {
-        const contentElement = document.getElementById('content');
+    if (contentElement) {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
 
-        if (contentElement) {
-            const screenWidth = window.innerWidth;
-            const screenHeight = window.innerHeight;
+        // Determine whether the screen is in portrait or landscape mode
+        const isPortrait = screenHeight > screenWidth;
 
-            // Determine whether the screen is in portrait or landscape mode
-            const isPortrait = screenHeight > screenWidth;
+        // Calculate the adjustment factor based on screen width
+        const marginValue = 'auto'; // Center content both horizontally and vertically
 
-            // Calculate the adjustment factor based on screen width
-            const adjustmentFactor = isPortrait ? 0 : Math.min(1, (screenWidth - 1280) / 200);
+        // Calculate the zoom level adjustment
+        let adjustedZoomLevel = zoomLevel;
 
-            // Margin adjustment for the left side
-            const marginValue = 0;
+        if (lastOrientation !== '' && lastOrientation !== (isPortrait ? 'portrait' : 'landscape')) {
+            // Orientation changed, adjust the zoom level
+            if (isPortrait) {
+                // Portrait mode: Increase the zoom level by 25%
+                adjustedZoomLevel = Math.min(2.0, adjustedZoomLevel + 0.25);
+            } else {
+                // Landscape mode: Decrease the zoom level by 25%
+                adjustedZoomLevel = Math.max(1.0, adjustedZoomLevel - 0.25);
+            }
 
-            // Calculate the zoom level adjustment (increase by 75%)
-            const zoomValue = zoomLevel;
+            // Save the adjusted zoom level
+            zoomLevel = adjustedZoomLevel;
+            adjustZoomLevel(zoomLevel);
 
-            contentElement.style.marginLeft = `${marginValue}px`; // Adjust the left margin
-
-            // Add space between the menu and text
-            addSpaceBetweenMenuAndText();
-            // Adjust the zoom level of the entire page
-            document.body.style.zoom = `${zoomValue}`;
+            // Update the zoom level button text after adjusting
+            updateZoomButtonText();
+            // Save all states, including the zoom level
+            saveStates();
         }
+
+        contentElement.style.marginLeft = `${marginValue}`;
+        contentElement.style.marginRight = `${marginValue}`;
+        contentElement.style.marginTop = `${marginValue}`;
+        contentElement.style.marginBottom = `${marginValue}`;
+
+        // Add space between the menu and text
+        addSpaceBetweenMenuAndText();
+
+        // Apply CSS styles based on orientation
+        if (isPortrait) {
+            // Portrait mode styles
+            contentElement.style.maxWidth = ''; // Reset max width
+        } else {
+            // Landscape mode styles
+            contentElement.style.maxWidth = '800px'; // Adjust the max width for landscape
+        }
+
+        // Store the current orientation in lastOrientation
+        lastOrientation = isPortrait ? 'portrait' : 'landscape';
+
+        // Update the zoom meter after changing screen size
+        updateZoomButtonText();
     }
+}
+
+    // Initialize a flag to track whether the page has loaded
+    let isPageLoaded = false;
 
     // Call the adjustLayoutAndZoom function when the page loads and on window resize
-    window.addEventListener('load', adjustLayoutAndZoom);
-    window.addEventListener('resize', adjustLayoutAndZoom);
+    window.addEventListener('load', () => {
+        isPageLoaded = true;
+        adjustLayoutAndZoom();
+    });
+    window.addEventListener('resize', () => {
+        if (isPageLoaded) {
+            adjustLayoutAndZoom();
+        }
+    });
 
     // Initial call to adjustLayoutAndZoom when the page loads
+    // Note: We don't call it immediately on page load, only after the "load" event to prevent zooming on load
     adjustLayoutAndZoom();
-});
 
+    // Add button click animations
+    const buttons = document.querySelectorAll('button');
+
+    buttons.forEach((button) => {
+        button.addEventListener('mousedown', () => {
+            // Add a pressed style when the button is clicked
+            button.style.transform = 'scale(0.95)';
+        });
+
+        button.addEventListener('mouseup', () => {
+            // Remove the pressed style when the button is released
+            button.style.transform = 'scale(1)';
+        });
+    });
+});

@@ -10,8 +10,8 @@ TamperMonkey Script to implement extended visibility features to the Princeton E
 - Enable all features for all princeton websites:
 (https://introcs.cs.princeton.edu/, https://algs4.cs.princeton.edu/, https://aofa.cs.princeton.edu/, https://ac.cs.princeton.edu/)
 
-###This Script is in Alpha!
+### This Script is in Alpha!
 Feel free to test. There may be some bugs.
 
-###How-To Install?
+### How-To Install?
 Copy contents of Princeton Layout Adjustments .js file into a TamperMonkey Script. Save. Refresh Princeton EDU
